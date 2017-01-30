@@ -8,7 +8,7 @@ function getUser(userData) {
         $("#upload").show();
     }
 }
-
+// need to add timer to javascript
 function getPhotos(photosData) {
     for (var i in photosData) {
         var photo = photosData[i];

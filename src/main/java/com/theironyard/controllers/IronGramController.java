@@ -6,7 +6,6 @@ import com.theironyard.services.UserRepository;
 import com.theironyard.utilities.PasswordStorage;
 import org.h2.tools.Server;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
@@ -85,7 +84,7 @@ public class IronGramController {
             HttpSession session,
             HttpServletResponse response,
             String receiver,
-            MultipartFile photo
+            MultipartFile photo, int timer
     ) throws Exception {
         String username = (String) session.getAttribute("username");
 
@@ -111,6 +110,7 @@ public class IronGramController {
 
         Photo p = new Photo();
         //need to set Time
+        p.setTimer(timer);
         p.setSender(senderUser);
         p.setRecipient(receiverUser);
         p.setFilename(photoFile.getName());
@@ -128,7 +128,13 @@ public class IronGramController {
             throw new Exception("Not logged in.");
         }
         User user = users.findFirstByName(username); //returns user object:search users repo for current sessions username
-        List<Photo> userPhoto = photos.findByRecipient(user); // retrieves all photos by
+        List<Photo> userPhoto = photos.findByRecipient(user); // retrieves all photos by user
+        if(userPhoto != null) { // make sure photos exist
+            Photo currentPhoto = photos.findPhotoByRecipient(user); // sets the current photo
+            int countdown = currentPhoto.getTimer(); // get the time to set for the delay
+            TimeUnit.SECONDS.sleep(countdown); // sets the delay
+            photos.delete(userPhoto); // deletes the photo
+        }
         return photos.findByRecipient(user); // returns photos by that user
     }
 }
