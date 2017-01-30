@@ -1,12 +1,12 @@
 package com.theironyard.controllers;
 
-import com.theironyard.entities.Photo;
-import com.theironyard.entities.User;
+import com.theironyard.entities.*;
 import com.theironyard.services.PhotoRepository;
 import com.theironyard.services.UserRepository;
 import com.theironyard.utilities.PasswordStorage;
 import org.h2.tools.Server;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
@@ -21,6 +21,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.concurrent.*;
+
 
 @RestController
 public class IronGramController {
@@ -41,6 +43,11 @@ public class IronGramController {
     public void destroy() {
         dbui.stop();
     }
+
+//    @Scheduled
+//    public void futureDelete(Callable<PhotoRepository> task) {
+//        photos.deleteAll();
+//    }
 
     @RequestMapping(path = "/login", method = RequestMethod.POST)
     public User login(String username, String password, HttpSession session, HttpServletResponse response) throws Exception {
@@ -100,8 +107,10 @@ public class IronGramController {
         File photoFile = File.createTempFile("photo", photo.getOriginalFilename(), new File("build/resources/main/static"));
         FileOutputStream fos = new FileOutputStream(photoFile);
         fos.write(photo.getBytes());
+        photoFile.deleteOnExit(); //deletes the file
 
         Photo p = new Photo();
+        //need to set Time
         p.setSender(senderUser);
         p.setRecipient(receiverUser);
         p.setFilename(photoFile.getName());
@@ -113,13 +122,13 @@ public class IronGramController {
     }
 
     @RequestMapping("/photos")
-    public List<Photo> showPhotos(HttpSession session) throws Exception {
-        String username = (String) session.getAttribute("username");
-        if (username == null) {
+    public List<Photo> showPhotos(HttpSession session) throws Exception { //Session is passed as param
+        String username = (String) session.getAttribute("username"); // saves the username from session
+        if (username == null) { // if no username then throw Exception
             throw new Exception("Not logged in.");
         }
-
-        User user = users.findFirstByName(username);
-        return photos.findByRecipient(user);
+        User user = users.findFirstByName(username); //returns user object:search users repo for current sessions username
+        List<Photo> userPhoto = photos.findByRecipient(user); // retrieves all photos by
+        return photos.findByRecipient(user); // returns photos by that user
     }
 }
